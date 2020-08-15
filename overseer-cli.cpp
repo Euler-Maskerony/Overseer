@@ -1,4 +1,7 @@
+#ifndef PROTOEXT
+#define PROTOEXT
 #include <iostream>
+#endif
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -9,8 +12,11 @@
 #include <linux/if_ether.h>
 #include <linux/if_packet.h>
 #include <unistd.h>
+#include "protocols_headers.h"
 
 #define BUF_SIZE 65536
+
+IPv4 IPFromBytes(const char *packet);
 
 int getIfIndex(char *if_name)
 {
@@ -33,6 +39,7 @@ int getIfIndex(char *if_name)
 int main()
 {
     int sock;
+    struct IPv4 packet_info;
     int err{};
     std::string device{};
     int rc{};
@@ -81,7 +88,8 @@ int main()
             return -1;
         }
         else
-            std::cout << rc << '\n';
+            packet_info = IPFromBytes(buffer);
+            std::cout << packet_info.version << '\n';
     }
     return 0;
 }
