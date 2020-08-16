@@ -1,7 +1,4 @@
-#ifndef PROTOEXT
-#define PROTOEXT
 #include <iostream>
-#endif
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -16,7 +13,7 @@
 
 #define BUF_SIZE 65536
 
-IPv4 IPFromBytes(const char *packet);
+IP IPFromBytes(const char *packet);
 
 int getIfIndex(char *if_name)
 {
@@ -39,7 +36,7 @@ int getIfIndex(char *if_name)
 int main()
 {
     int sock;
-    struct IPv4 packet_info;
+    struct IP packet_info;
     int err{};
     std::string device{};
     int rc{};
@@ -76,20 +73,21 @@ int main()
 
     bool ipincl{true};
     struct ifreq interface;
+    strcpy(interface.ifr_name, DEVICE);
     ioctl(sock, SIOCGIFFLAGS, &interface);
     interface.ifr_flags |= IFF_PROMISC;
-    ioctl(sock, SIOCGIFFLAGS, &interface);
+    ioctl(sock, SIOCSIFFLAGS, &interface);
     while(1)
     {
         if((rc = recvfrom(sock, buffer, BUF_SIZE, 0, 0, 0)) < 0)
         {
-            std::cout << "[!] Error while recieving packets." << errno;
+            std::cout << "[!] Error while recieving packets: " << errno << '\n';
             close(sock);
             return -1;
         }
         else
             packet_info = IPFromBytes(buffer);
-            std::cout << packet_info.version << '\n';
+            std::cout << packet_info.dest << '\n';
     }
     return 0;
 }

@@ -12,21 +12,12 @@ struct IPv4_catch
     char32_t    dest;
 };
 
-struct IPv4
+struct IP
 {
     int         version;
-    int         hsize;
-    std::string dscp;
-    std::string ecn;
-    int         size;
-    int         id;
-    bool        reserved{false};
-    bool        nFrag;
-    bool        anFrags;
-    int         offset;
+    long        size;
     int         ttl;
     std::string protocol;
-    int         checksum;
     std::string src;
     std::string dest;
 };
@@ -46,17 +37,3 @@ struct IPv6_catch
     char32_t    dest_third_addr;
     char32_t    dest_fourth_addr;
 };
-
-struct IPv6
-{
-    int         version;
-    std::string dscp;
-    std::string ecn;
-    long        flow_label;
-    int         payload_length;
-    std::string protocol;
-    int         hop_limit;
-    std::string src;
-    std::string dest;
-};
-

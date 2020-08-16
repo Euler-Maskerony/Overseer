@@ -1,6 +1,7 @@
 
 
 std::unordered_map<int, std::string> IP_protocols = {
+    {0, "IPv6 H-b-H"},
     {1, "ICMP"},
     {2, "IGMP"},
     {3, "GGP"},
@@ -50,8 +51,8 @@ std::unordered_map<int, std::string> IP_protocols = {
     {47, "GRE"},
     {48, "MHRP"},
     {49, "BNA"},
-    {50, "ESP"},
-    {51, "AH"},
+    {50, "IPv6 ESP"},
+    {51, "IPv6 AH"},
     {52, "I-NLSP"},
     {53, "SWIPE"},
     {54, "NARP"},
