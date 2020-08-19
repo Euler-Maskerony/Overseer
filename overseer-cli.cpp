@@ -14,7 +14,6 @@
 #define BUF_SIZE 65536
 
 void PacketHandler(const char *packet, const int p_size);
-ARP ARPFromBytes(const char *packet, ARP &packet_info);
 
 int getIfIndex(char *if_name)
 {

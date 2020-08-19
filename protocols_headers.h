@@ -2,8 +2,8 @@ struct IPv4_catch
 {
     unsigned char        version_hsize;
     unsigned char        dscp_ecp;
-    char16_t             size;
-    char16_t             id;
+    uint16_t             size;
+    uint16_t             id;
     char16_t             flags_offset;
     unsigned char        ttl;
     unsigned char        protocol;
@@ -15,7 +15,7 @@ struct IPv4_catch
 struct IP
 {
     unsigned int         version;
-    unsigned long        size;
+    unsigned int         size;
     unsigned int         ttl;
     std::string          protocol;
     std::string          src;
@@ -50,6 +50,8 @@ struct ARP_catch
 
 struct ARP
 {
+    int             hlen;
+    int             plen;
     std::string     sha;
     std::string     spa;
     std::string     tha;

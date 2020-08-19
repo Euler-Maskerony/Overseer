@@ -10,9 +10,7 @@
 
 
 const std::bitset<8> version_mask{0b11110000};
-
 const std::bitset<32> addr_byte_IPv4{0b11111111000000000000000000000000};
-
 const std::bitset<32> payload_length_mask_IPv6{0b11111111111111110000000000000000};
 const std::bitset<32> next_header_mask_IPv6{0b00000000000000001111111100000000};
 const std::bitset<32> hop_limit_mask_IPv6{0b00000000000000000000000011111111};
@@ -37,87 +35,89 @@ std::unordered_map<std::bitset<4>, char> bin_to_hex = {
 };
 
 
+class Packet
+{
+
+};
+
+
+std::string MACAddrFromBytes(const char *addr_bytes)
+{
+    std::string addr{};
+    const std::bitset<8> fourbit_mask{0b11110000};
+    for(int i{0}; i<=11; i+=1)
+        addr += bin_to_hex[static_cast<std::bitset<4>>(((static_cast<std::bitset<8>>(addr_bytes[i/2]) & (fourbit_mask >> i%2*4)) >> (4-i%2*4)).to_ulong())];
+    char sep{':'};
+    for(int i{10}; i>=2; i-=2)
+        addr.insert(i, (const char *)&sep);
+
+    return addr;
+}
+
+
+std::string IPv4AddrFromBytes(const char *addr_bytes)
+{
+    std::string addr{};
+    for(int i{0}; i<4; i++)
+        addr += std::to_string(static_cast<int>(static_cast<std::bitset<8>>(addr_bytes[i]).to_ulong())) + ".";
+    addr = addr.substr(0, addr.size()-1);
+
+    return addr;
+}
+
+
 IP IPv4FromBytes(const char *packet, IP &packet_info)
 {
     const int HEADER_SIZE = 20;
     struct IPv4_catch packet_info_c;
     memcpy((void *)&packet_info_c, (void *)packet, HEADER_SIZE);
-    packet_info.size = ntohl(static_cast<unsigned long>(packet_info_c.size));
+    packet_info.size = static_cast<unsigned int>(ntohs(packet_info_c.size));
     packet_info.ttl = static_cast<unsigned int>(packet_info_c.ttl);
     packet_info.protocol = IP_protocols[static_cast<unsigned int>(packet_info_c.protocol)];
+    packet_info_c.src = packet_info_c.src;
+    packet_info_c.dest = packet_info_c.dest;
+    char src_addr_bytes[4], dest_addr_bytes[4];
+    memcpy((void *)src_addr_bytes, (void *)&packet_info_c.src, 4);
+    memcpy((void *)dest_addr_bytes, (void *)&packet_info_c.dest, 4);
+    packet_info.src = IPv4AddrFromBytes(src_addr_bytes);
+    packet_info.dest = IPv4AddrFromBytes(dest_addr_bytes);
 
-    packet_info_c.src = ntohl(packet_info_c.src);
-    packet_info_c.dest = ntohl(packet_info_c.dest);
-    std::bitset<32> src_bits{static_cast<std::bitset<32>>(packet_info_c.src)};
-    std::bitset<32> dest_bits{static_cast<std::bitset<32>>(packet_info_c.dest)};
-
-    packet_info.src = std::to_string(static_cast<unsigned int>(((src_bits & addr_byte_IPv4) >> 24).to_ulong())) + "." +
-                std::to_string(static_cast<unsigned int>(((src_bits & (addr_byte_IPv4 >> 8)) >> 16).to_ulong())) + "." +
-                std::to_string(static_cast<unsigned int>(((src_bits & (addr_byte_IPv4 >> 16)) >> 8).to_ulong())) + "." +
-                std::to_string(static_cast<unsigned int>((src_bits & (addr_byte_IPv4 >> 24)).to_ulong()));
-
-    packet_info.dest = std::to_string(static_cast<unsigned int>(((dest_bits & addr_byte_IPv4) >> 24).to_ulong())) + "." +
-                std::to_string(static_cast<unsigned int>(((dest_bits & (addr_byte_IPv4 >> 8)) >> 16).to_ulong())) + "." +
-                std::to_string(static_cast<unsigned int>(((dest_bits & (addr_byte_IPv4 >> 16)) >> 8).to_ulong())) + "." +
-                std::to_string(static_cast<unsigned int>((dest_bits & (addr_byte_IPv4 >> 24)).to_ulong()));
     return packet_info;
 }
 
 
-std::string IPv6AddrFromBytes(const char32_t &first, const char32_t &second, const char32_t &third, const char32_t &fourth)
+std::string IPv6AddrFromBytes(const char *addr_bytes)
 {
-    const std::bitset<32> fourbit_mask{0b11110000000000000000000000000000};
-    const std::bitset<32> addr_bytes[4]{
-        static_cast<std::bitset<32>>(first),
-        static_cast<std::bitset<32>>(second),
-        static_cast<std::bitset<32>>(third),
-        static_cast<std::bitset<32>>(fourth)
-    };
-    std::bitset<4> addr_bits[32];
-
-    char addr[39];
-    addr[4] = ':';
-    addr[9] = ':';
-    addr[14] = ':';
-    addr[19] = ':';
-    addr[24] = ':';
-    addr[29] = ':';
-    addr[34] = ':';
-
+    const std::bitset<8> fourbit_mask{0b11110000};
     char addr_chars[32];
+    for(int i{0}; i<32; i++)
+        addr_chars[i] = bin_to_hex[
+        static_cast<std::bitset<4>>(((static_cast<std::bitset<8>>(addr_bytes[i/2]) & (fourbit_mask >> (i % 2) * 4)) >> (4 - (i % 2) * 4)).to_ulong())
+        ];
+    std::string addr{addr_chars};
+    char sep{':'};
+    for(int i{3}; i <= 27; i+=4)
+        addr.insert(i, (char *)&sep);
 
-    for(int i{0}; i < 32; i++)
-    {
-        addr_bits[i] = static_cast<std::bitset<4>>(((addr_bytes[i/8] & (fourbit_mask >> (i % 8) * 4)) >> (28 - (i % 8) * 4)).to_ulong());
-        addr_chars[i] = bin_to_hex[addr_bits[i]];
-    }
-    for(int i{0}; i <= 35; i+=5)
-        memcpy((void *)&addr[i], (void *)&addr_chars[i-i/5], 4);
-
-    std::string result{addr};
-    return result;
+    return addr;
 }
 
 
 IP IPv6FromBytes(const char *packet, IP &packet_info)
 {
     const int HEADER_SIZE = 40;
+    char src_addr_bytes[16], dest_addr_bytes[16];
     struct IPv6_catch packet_info_c;
     memcpy((void *)&packet_info_c, (void *)packet, HEADER_SIZE);
-    packet_info.size = static_cast<long>(packet_info_c.payload_length) + 40;
+    packet_info.size = static_cast<long>(ntohs(packet_info_c.payload_length)) + 40;
     packet_info.ttl = static_cast<int>(packet_info_c.hop_limit);
-    packet_info.src = IPv6AddrFromBytes(
-        packet_info_c.src_first_addr,
-        packet_info_c.src_second_addr,
-        packet_info_c.src_third_addr,
-        packet_info_c.src_fourth_addr
-    );
-    packet_info.dest = IPv6AddrFromBytes(
-        packet_info_c.dest_first_addr,
-        packet_info_c.dest_second_addr,
-        packet_info_c.dest_third_addr,
-        packet_info_c.dest_fourth_addr
-    );
+    char32_t *addr_ptr{&packet_info_c.src_first_addr};
+    for(int i{0}; i<=7; i++)
+        *(addr_ptr+i) = ntohl(*(addr_ptr+i));
+    memcpy((void *)src_addr_bytes, (void *)&packet_info_c.src_first_addr, 16);
+    memcpy((void *)dest_addr_bytes, (void *)&packet_info_c.dest_first_addr, 16);
+    packet_info.src = IPv6AddrFromBytes(src_addr_bytes);
+    packet_info.dest = IPv6AddrFromBytes(dest_addr_bytes);
     return packet_info;
 }
 
@@ -127,19 +127,11 @@ ARP ARPFromBytes(const char *packet, ARP &packet_info)
     struct ARP_catch packet_info_c;
     const int HEADER_SIZE = 8;
     memcpy((void *)&packet_info_c, (void *)packet, HEADER_SIZE);
-    if(ntohs(packet_info_c.htype) == 0x0001 | 1)
+    packet_info.hlen = packet_info_c.hlen;
+    packet_info.plen = packet_info_c.plen;
+    if(ntohs(packet_info_c.htype) == 0x0001)
     {
-        std::bitset<48> sha_bits;
-        memcpy((void *)&sha_bits, (void *)(packet+HEADER_SIZE), packet_info_c.hlen);
-        const std::bitset<48> fourbit_mask{0b111100000000000000000000000000000000000000000000};
-        for(int i{11}; i>=1; i-=2)
-        {
-            packet_info.sha += bin_to_hex[static_cast<std::bitset<4>>(((sha_bits & (fourbit_mask >> (i-1)*4)) >> (44-(i-1)*4)).to_ulong())];
-            packet_info.sha += bin_to_hex[static_cast<std::bitset<4>>(((sha_bits & (fourbit_mask >> i*4)) >> (44-i*4)).to_ulong())];
-        }
-        char sep{':'};
-        for(int i{10}; i>=2; i-=2)
-            packet_info.sha.insert(i, (const char *)&sep);
+        packet_info.sha = MACAddrFromBytes(packet+HEADER_SIZE);
     }
     else
     {
