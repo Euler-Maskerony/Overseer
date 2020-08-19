@@ -4,14 +4,14 @@
 #include <cstring>
 #include "protocols.h"
 #include "protocols_headers.h"
+#include <netinet/in.h>
+#include <netpacket/packet.h>
+#include <linux/if_ether.h>
 
 
 const std::bitset<8> version_mask{0b11110000};
 
-const std::bitset<32> first_byte_IPv4{0b11111111000000000000000000000000};
-const std::bitset<32> second_byte_IPv4{0b00000000111111110000000000000000};
-const std::bitset<32> third_byte_IPv4{0b00000000000000001111111100000000};
-const std::bitset<32> fourth_byte_IPv4{0b00000000000000000000000011111111};
+const std::bitset<32> addr_byte_IPv4{0b11111111000000000000000000000000};
 
 const std::bitset<32> payload_length_mask_IPv6{0b11111111111111110000000000000000};
 const std::bitset<32> next_header_mask_IPv6{0b00000000000000001111111100000000};
@@ -37,22 +37,30 @@ std::unordered_map<std::bitset<4>, char> bin_to_hex = {
 };
 
 
-void IPv4FromBytes(const char *packet, IP &packet_info)
+IP IPv4FromBytes(const char *packet, IP &packet_info)
 {
     const int HEADER_SIZE = 20;
     struct IPv4_catch packet_info_c;
     memcpy((void *)&packet_info_c, (void *)packet, HEADER_SIZE);
-    packet_info.size = static_cast<long>(packet_info_c.size);
-    packet_info.ttl = static_cast<int>(packet_info_c.ttl);
-    packet_info.protocol = IP_protocols[static_cast<int>(packet_info_c.protocol)];
-    packet_info.src = std::to_string(static_cast<int>(((static_cast<std::bitset<32>>(packet_info_c.src) & first_byte_IPv4) >> 24).to_ulong())) + "." +
-                std::to_string(static_cast<int>(((static_cast<std::bitset<32>>(packet_info_c.src) & second_byte_IPv4) >> 16).to_ulong())) + "." +
-                std::to_string(static_cast<int>(((static_cast<std::bitset<32>>(packet_info_c.src) & third_byte_IPv4) >> 8).to_ulong())) + "." +
-                std::to_string(static_cast<int>((static_cast<std::bitset<32>>(packet_info_c.src) & fourth_byte_IPv4).to_ulong()));
-    packet_info.dest = std::to_string(static_cast<int>(((static_cast<std::bitset<32>>(packet_info_c.dest) & first_byte_IPv4) >> 24).to_ulong())) + "." +
-                std::to_string(static_cast<int>(((static_cast<std::bitset<32>>(packet_info_c.dest) & second_byte_IPv4) >> 16).to_ulong())) + "." +
-                std::to_string(static_cast<int>(((static_cast<std::bitset<32>>(packet_info_c.dest) & third_byte_IPv4) >> 8).to_ulong())) + "." +
-                std::to_string(static_cast<int>((static_cast<std::bitset<32>>(packet_info_c.dest) & fourth_byte_IPv4).to_ulong()));
+    packet_info.size = ntohl(static_cast<unsigned long>(packet_info_c.size));
+    packet_info.ttl = static_cast<unsigned int>(packet_info_c.ttl);
+    packet_info.protocol = IP_protocols[static_cast<unsigned int>(packet_info_c.protocol)];
+
+    packet_info_c.src = ntohl(packet_info_c.src);
+    packet_info_c.dest = ntohl(packet_info_c.dest);
+    std::bitset<32> src_bits{static_cast<std::bitset<32>>(packet_info_c.src)};
+    std::bitset<32> dest_bits{static_cast<std::bitset<32>>(packet_info_c.dest)};
+
+    packet_info.src = std::to_string(static_cast<unsigned int>(((src_bits & addr_byte_IPv4) >> 24).to_ulong())) + "." +
+                std::to_string(static_cast<unsigned int>(((src_bits & (addr_byte_IPv4 >> 8)) >> 16).to_ulong())) + "." +
+                std::to_string(static_cast<unsigned int>(((src_bits & (addr_byte_IPv4 >> 16)) >> 8).to_ulong())) + "." +
+                std::to_string(static_cast<unsigned int>((src_bits & (addr_byte_IPv4 >> 24)).to_ulong()));
+
+    packet_info.dest = std::to_string(static_cast<unsigned int>(((dest_bits & addr_byte_IPv4) >> 24).to_ulong())) + "." +
+                std::to_string(static_cast<unsigned int>(((dest_bits & (addr_byte_IPv4 >> 8)) >> 16).to_ulong())) + "." +
+                std::to_string(static_cast<unsigned int>(((dest_bits & (addr_byte_IPv4 >> 16)) >> 8).to_ulong())) + "." +
+                std::to_string(static_cast<unsigned int>((dest_bits & (addr_byte_IPv4 >> 24)).to_ulong()));
+    return packet_info;
 }
 
 
@@ -91,11 +99,11 @@ std::string IPv6AddrFromBytes(const char32_t &first, const char32_t &second, con
 }
 
 
-void IPv6FromBytes(const char *packet, IP &packet_info)
+IP IPv6FromBytes(const char *packet, IP &packet_info)
 {
     const int HEADER_SIZE = 40;
     struct IPv6_catch packet_info_c;
-    memcpy((void *)&packet_info_c, (void *)&packet, HEADER_SIZE);
+    memcpy((void *)&packet_info_c, (void *)packet, HEADER_SIZE);
     packet_info.size = static_cast<long>(packet_info_c.payload_length) + 40;
     packet_info.ttl = static_cast<int>(packet_info_c.hop_limit);
     packet_info.src = IPv6AddrFromBytes(
@@ -110,17 +118,59 @@ void IPv6FromBytes(const char *packet, IP &packet_info)
         packet_info_c.dest_third_addr,
         packet_info_c.dest_fourth_addr
     );
+    return packet_info;
 }
 
 
-IP IPFromBytes(const char *packet)
+ARP ARPFromBytes(const char *packet, ARP &packet_info)
 {
-    int version = static_cast<int>(((static_cast<std::bitset<8>>(packet[0]) & version_mask) >> 4).to_ulong());
-    struct IP packet_info;
-    packet_info.version = version;
-    if(version == 6)
-        IPv4FromBytes((const char *)&packet, packet_info);
+    struct ARP_catch packet_info_c;
+    const int HEADER_SIZE = 8;
+    memcpy((void *)&packet_info_c, (void *)packet, HEADER_SIZE);
+    if(ntohs(packet_info_c.htype) == 0x0001 | 1)
+    {
+        std::bitset<48> sha_bits;
+        memcpy((void *)&sha_bits, (void *)(packet+HEADER_SIZE), packet_info_c.hlen);
+        const std::bitset<48> fourbit_mask{0b111100000000000000000000000000000000000000000000};
+        for(int i{11}; i>=1; i-=2)
+        {
+            packet_info.sha += bin_to_hex[static_cast<std::bitset<4>>(((sha_bits & (fourbit_mask >> (i-1)*4)) >> (44-(i-1)*4)).to_ulong())];
+            packet_info.sha += bin_to_hex[static_cast<std::bitset<4>>(((sha_bits & (fourbit_mask >> i*4)) >> (44-i*4)).to_ulong())];
+        }
+        char sep{':'};
+        for(int i{10}; i>=2; i-=2)
+            packet_info.sha.insert(i, (const char *)&sep);
+    }
     else
-        IPv6FromBytes((const char *)&packet, packet_info);
+    {
+        packet_info.sha = "/Unknown protocol/";
+        packet_info.tha = "/Unknown protocol/";
+    }
+
     return packet_info;
+}
+
+
+void PacketHandler(const char *packet, const int p_size)
+{
+    struct ethhdr ether_hdr;
+    memcpy((void *)&ether_hdr, (void *)packet, ETH_HLEN);
+    std::string eth_proto = Eth_protocols[ntohs(ether_hdr.h_proto)];
+    if(eth_proto == "Address Resolution Protocol")
+    {
+        struct ARP packet_info;
+        packet_info = ARPFromBytes((const char *)(packet+ETH_HLEN), packet_info);
+        std::cout << packet_info.sha << '\n';
+    }
+    else if(eth_proto == "Internet Protocol version 4")
+    {
+        struct IP packet_info;
+        packet_info = IPv4FromBytes((const char *)(packet+ETH_HLEN), packet_info);
+        std::cout << packet_info.src << '\n';
+    }
+    else if(eth_proto == "Internet Protocol Version 6")
+    {
+        struct IP packet_info;
+        packet_info = IPv6FromBytes((const char *)(packet+ETH_HLEN), packet_info);
+    }
 }

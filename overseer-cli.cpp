@@ -13,7 +13,8 @@
 
 #define BUF_SIZE 65536
 
-IP IPFromBytes(const char *packet);
+void PacketHandler(const char *packet, const int p_size);
+ARP ARPFromBytes(const char *packet, ARP &packet_info);
 
 int getIfIndex(char *if_name)
 {
@@ -48,7 +49,7 @@ int main()
     strcpy(DEVICE, device.c_str());
     int if_index = getIfIndex(DEVICE);
 
-    if((sock = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_IP))) < 0)
+    if((sock = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0)
     {
         std::cout << "[!] Could not create socket: " << errno << '\n';
         close(sock);
@@ -57,7 +58,7 @@ int main()
 
     struct sockaddr_ll s_ll;
     s_ll.sll_family = PF_PACKET;
-    s_ll.sll_protocol = htons(ETH_P_IP);
+    s_ll.sll_protocol = htons(ETH_P_ALL);
     s_ll.sll_ifindex = if_index;
 
     if((err = bind(sock, (const sockaddr *) &s_ll, sizeof(s_ll))) < 0)
@@ -86,8 +87,9 @@ int main()
             return -1;
         }
         else
-            packet_info = IPFromBytes(buffer);
-            std::cout << packet_info.dest << '\n';
+        {
+            PacketHandler(buffer, sizeof(buffer));
+        }
     }
     return 0;
 }
