@@ -1,6 +1,8 @@
+#include <unordered_map>
+#ifndef PROTO_NUMS
+#define PROTO_NUMS
 
-
-std::unordered_map<int, std::string> IP_protocols = {
+static std::unordered_map<int, std::string> IP_protocols = {
     {0, "IPv6 H-b-H"},
     {1, "ICMP"},
     {2, "IGMP"},
@@ -146,7 +148,7 @@ std::unordered_map<int, std::string> IP_protocols = {
     {142, "ROHC"}
 };
 
-std::unordered_map<int, std::string> Eth_protocols = {
+static std::unordered_map<int, std::string> Eth_protocols = {
     {0x0800, "Internet Protocol version 4"},
     {0x0806, "Address Resolution Protocol"},
     {0x0842, "Wake-on-LAN"},
@@ -201,3 +203,5 @@ std::unordered_map<int, std::string> Eth_protocols = {
     {0x9100, "IEEE 802.1Q"},
     {0xF1C1, "Time-Sensitive Networking"}
 };
+
+#endif
