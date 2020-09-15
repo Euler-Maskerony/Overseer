@@ -10,7 +10,7 @@
 #include <linux/if_packet.h>
 #include <unistd.h>
 
-int getIfIndex(char *if_name)
+int getIFIndex(char *if_name)
 {
     struct ifreq ifr;
     strcpy(ifr.ifr_name, if_name);
@@ -38,7 +38,7 @@ int socket_setup()
     std::cin >> device;
     char DEVICE[sizeof(device)];
     strcpy(DEVICE, device.c_str());
-    int if_index = getIfIndex(DEVICE);
+    int if_index = getIFIndex(DEVICE);
 
     if((sock = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0)
     {

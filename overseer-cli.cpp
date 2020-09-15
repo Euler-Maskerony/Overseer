@@ -30,8 +30,7 @@ int main()
         }
         else
         {
-            Packet packet_info;
-            packet_info.PacketHandler(buffer, sizeof(buffer));
+            Packet packet_info(buffer);
             ClientHandler(packet_info, clients);
         }
     }

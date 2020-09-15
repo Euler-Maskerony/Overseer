@@ -53,18 +53,4 @@ struct TCP_catch
     uint16_t        urg_point;
 };
 
-struct TCP
-{
-    unsigned int         src_port;
-    unsigned int         dest_port;
-    unsigned long        sn;
-    unsigned long        ack_val;
-    bool                 urg;
-    bool                 ack;
-    bool                 psh;
-    bool                 rst;
-    bool                 syn;
-    bool                 fin;
-};
-
 #endif

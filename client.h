@@ -1,24 +1,10 @@
 #include <string>
 #include <vector>
 #include "packets_processing.h"
+#include "protocol_classes.h"
 
 #ifndef CLIENT
 #define CLIENT
-
-class Connection
-{
-public:
-    std::string         net_protocol;
-    std::string         trans_protocol;
-    std::string         src;
-    std::string         dest;
-    std::string         state;
-};
-
-class Datagrams
-{
-
-};
 
 class Client
 {
@@ -28,6 +14,7 @@ public:
     std::vector<Datagrams>       datagrams;
 
     Client(const Packet packet_info) : mac_addr{packet_info.mac_src}{};
+    std::string Tree();
     Client operator+=(const Packet &packet);
 };
 

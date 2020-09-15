@@ -7,36 +7,29 @@
 #include "packets_processing.h"
 
 
-void Packet::PacketHandler(const char *packet, const int p_size)
+Packet::Packet(const char *packet)
 {
     struct ethhdr ether_hdr;
     memcpy((void *)&ether_hdr, (void *)packet, ETH_HLEN);
     protocol_name = Eth_protocols[ntohs(ether_hdr.h_proto)];
     if(protocol_name == "Address Resolution Protocol")
     {
-        ARP packet_info;
-        packet_info.Parse(packet+ETH_HLEN);
+        ARP packet_info(packet+ETH_HLEN);
         dump = packet_info.Dump();
         protocol_info = &packet_info;
     }
     else if(protocol_name == "Internet Protocol version 4")
     {
-        IPv4 packet_info;
-        packet_info.Parse(packet+ETH_HLEN);
+        IPv4 packet_info(packet+ETH_HLEN);
         dump = packet_info.Dump();
         protocol_info = &packet_info;
     }
     else if(protocol_name == "Internet Protocol Version 6")
     {
-        IPv6 packet_info;
-        packet_info.Parse(packet+ETH_HLEN);
+        IPv6 packet_info(packet+ETH_HLEN);
         dump = packet_info.Dump();
         protocol_info = &packet_info;
     }
     else
         std::cout << "[!] Unknown protocol." << '\n';
 }
-
-std::string Packet::Dump(){ return dump; }
-
-
