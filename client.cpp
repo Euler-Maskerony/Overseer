@@ -16,12 +16,16 @@ Client Client::operator+=(const Packet &packet)
         IPv4 *ipv4 = reinterpret_cast<IPv4*>(packet.protocol_info);
         if(ipv4->connection)
         {
-            Connection *conn = reinterpret_cast<Connection*>(ipv4);
-            this->connections.push_back(*conn);
+            Connection *conn = reinterpret_cast<Connection*>(ipv4->info);
+            int conn_i;
+            if(conn_i = checkConnection(*conn) == -1)
+                this->connections.push_back(*conn);
+            else
+                this->connections[conn_i] += *conn;
         }
         else
         {
-            Datagrams *dg = reinterpret_cast<Datagrams*>(ipv4);
+            Datagrams *dg = reinterpret_cast<Datagrams*>(ipv4->info);
             this->datagrams.push_back(*dg);   
         }
         
@@ -33,6 +37,16 @@ Client Client::operator+=(const Packet &packet)
     }
     return *this;
 }
+
+
+int Client::checkConnection(Connection connection)
+{
+    for(int i; i < this->connections.size(); i++)
+    {
+        
+    }
+}
+
 
 void ClientHandler(const Packet packet_info, std::vector<Client> &clients)
 {

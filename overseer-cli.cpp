@@ -16,13 +16,12 @@ int socket_setup();
 int main()
 {
     char    buffer[BUF_SIZE];
-    int     rc{};
     SOCKET  sock{socket_setup()};
     std::vector<Client> clients;
 
     while(1)
     {
-        if((rc = recvfrom(sock, buffer, BUF_SIZE, 0, 0, 0)) < 0)
+        if((recvfrom(sock, buffer, BUF_SIZE, 0, 0, 0)) < 0)
         {
             std::cout << "[!] Error while recieving packets: " << errno << '\n';
             close(sock);

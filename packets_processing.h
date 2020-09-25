@@ -12,7 +12,7 @@ public:
     std::string          mac_dest;
     void*                protocol_info;
     
-    Packet(const char *packet);      
+    Packet(const char *packet);     
 };
 
 #endif

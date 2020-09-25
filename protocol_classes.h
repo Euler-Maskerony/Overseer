@@ -3,14 +3,22 @@
 #ifndef CL_PROTO
 #define CL_PROTO
 
-struct Connection
+class Connection
 {
+public:
     std::string         net_protocol;
     std::string         trans_protocol;
     std::string         src;
     std::string         dest;
     std::string         state;
     std::string         description;
+    int                 packets_count;
+
+
+    Connection operator+=(const Connection connection_dg);
+private:
+    void getDescription();
+
 };
 
 struct Datagrams
@@ -21,22 +29,24 @@ struct Datagrams
     std::string         description;
 };
 
-class IPv4: Connection
+class IPv4
 {
 public:
     unsigned int         size;
     unsigned int         ttl;
     bool                 connection;
+    void*                info;
     IPv4(const char *packet);
     std::string Description();
     std::string Dump();
 };
 
-class IPv6: Connection
+class IPv6
 {
 public:
     unsigned int         size;
     unsigned int         ttl;
+    void*                info;
     IPv6(const char *packet);
     std::string Description();
     std::string Dump();
@@ -53,7 +63,7 @@ public:
     std::string Dump();
 };
 
-class TCP
+class TCP: public Connection
 {
 public:
     int         src_port;

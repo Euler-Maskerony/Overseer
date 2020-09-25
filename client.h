@@ -16,6 +16,8 @@ public:
     Client(const Packet packet_info) : mac_addr{packet_info.mac_src}{};
     std::string Tree();
     Client operator+=(const Packet &packet);
+private:
+    int checkConnection(Connection connection);
 };
 
 void ClientHandler(const Packet packet_info, std::vector<Client> &clients);
