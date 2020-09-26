@@ -8,8 +8,8 @@ class Connection
 public:
     std::string         net_protocol;
     std::string         trans_protocol;
-    std::string         src;
-    std::string         dest;
+    std::string         local;
+    std::string         server;
     std::string         state;
     std::string         description;
     int                 packets_count;

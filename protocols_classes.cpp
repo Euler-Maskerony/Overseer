@@ -85,8 +85,16 @@ IPv4::IPv4(const char* packet)
     {
         connection = true;
         TCP tcp_packet(packet + HEADER_SIZE);
-        tcp_packet.src = src;
-        tcp_packet.dest = dest;
+        if(src.find("192.168") != std::string::npos)
+        {
+            tcp_packet.local = src;
+            tcp_packet.server = dest;
+        }
+        else
+        {
+            tcp_packet.local = dest;
+            tcp_packet.server = src;
+        }
         tcp_packet.net_protocol = net_protocol;
         info = &tcp_packet;
     }
