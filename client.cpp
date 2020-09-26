@@ -4,14 +4,6 @@
 #include "client.h"
 #include "protocol_classes.h"
 
-
-Client::Client(const Packet packet_info) : mac_addr{packet_info.mac_src}
-{
-    Connection place_holder;
-    this->connections.push_back(place_holder);
-}
-
-
 Client Client::operator+=(const Packet &packet)
 {
     if(packet.protocol_name == "Address Resolution Protocol")
@@ -50,9 +42,7 @@ Client Client::operator+=(const Packet &packet)
 int Client::checkConnection(Connection connection)
 {
     for(int i(this->connections.size()-1); i >= 0; i--)
-    {
-        if(this->connections[i].local == connection.local and this->connections[i].server == connection.server){ return i; }
-    }
+        if(this->connections[i].local == connection.local and this->connections[i].server == connection.server){ return i; };
 
     return -1;
 }

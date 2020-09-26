@@ -13,7 +13,7 @@ public:
     std::vector<Connection>      connections;
     std::vector<Datagrams>       datagrams;
 
-    Client(const Packet packet_info);
+    Client(const Packet packet_info) : mac_addr{packet_info.mac_src}{};
     std::string Tree();
     Client operator+=(const Packet &packet);
 private:
