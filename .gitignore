@@ -1,3 +1,4 @@
 *.json
 overseer-cli
 packets_proc
+sudo_gdb

@@ -6,23 +6,22 @@
 #include <vector>
 #include <thread>
 #include "packets_processing.h"
+#include "protocol_classes.h"
 #include "client.h"
 
 
 #define BUF_SIZE 65536
 typedef int SOCKET;
 
-std::vector<Client> clients; // TODO: Make it local
 bool kill_thread(false);
 bool pause_thread(false);
 
 int socket_setup();
 
-void recievingThread()
+
+void recievingThread(std::vector<Client> *clients, SOCKET sock)
 {
-    char    buffer[BUF_SIZE];
-    SOCKET  sock{socket_setup()};
-    sleep(1);
+    char buffer[BUF_SIZE];
 
     while(1)
     {
@@ -42,24 +41,26 @@ void recievingThread()
         else
         {
             Packet packet_info(buffer);
-            ClientHandler(packet_info, clients);
+            ClientHandler(packet_info, *clients);
         }
     }
 }
 
 int main()
 {
+    std::vector<Client> clients;
+    std::string command;
+
     std::cout << "Overseer 0.1" << '\n';
     std::cout << "Type \"help\" for more information." << '\n';
-    std::thread recieving_packets(recievingThread);
+    SOCKET sock{socket_setup()};
+    std::thread recieving_packets(recievingThread, &clients, sock);
     std::cout << "Recieving packets thread has been started" << '\n';
 
     while(1)
     {
-        std::string command;
-        std::cin >> command;
-
         std::cout << ">>> ";
+        std::cin >> command;
 
         if(command == "tree")
             std::cout << "nothing yet)" << '\n';

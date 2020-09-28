@@ -34,6 +34,7 @@ class IPv4
 public:
     unsigned int         size;
     unsigned int         ttl;
+    unsigned int         hsize;         
     bool                 connection;
     void*                info;
     IPv4(const char *packet);
@@ -66,10 +67,10 @@ public:
 class TCP: public Connection
 {
 public:
-    int         src_port;
-    int         dest_port;
-    long        sn;
-    long        ack_sn;
+    unsigned int         src_port;
+    unsigned int         dest_port;
+    long                 sn;
+    long                 ack_sn;
     
     struct Flags
     {

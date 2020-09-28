@@ -4,28 +4,28 @@
 #include "client.h"
 #include "protocol_classes.h"
 
-Client Client::operator+=(const Packet &packet)
+Client Client::operator+=(const Packet packet)
 {
     if(packet.protocol_name == "Address Resolution Protocol")
     {
-        Datagrams *arp = reinterpret_cast<Datagrams*>(packet.protocol_info);
-        this->datagrams.push_back(*arp);
+        Datagrams arp = *reinterpret_cast<Datagrams*>(packet.protocol_info);
+        this->datagrams.push_back(arp);
     }
     else if(packet.protocol_name == "Internet Protocol version 4")
     {
-        IPv4 *ipv4 = reinterpret_cast<IPv4*>(packet.protocol_info);
-        if(ipv4->connection)
+        IPv4 ipv4 = *reinterpret_cast<IPv4*>(packet.protocol_info);
+        if(ipv4.connection)
         {
-            Connection *conn = reinterpret_cast<Connection*>(ipv4->info);
+            Connection conn = *reinterpret_cast<Connection*>(ipv4.info);
             int conn_i;
-            if(conn_i = checkConnection(*conn) == -1)
-                this->connections.push_back(*conn);
+            if(conn_i = checkConnection(conn) == -1)
+                this->connections.push_back(conn);
             else
-                this->connections[conn_i] += *conn;
+                this->connections[conn_i] += conn;
         }
         else
         {
-            Datagrams *dg = reinterpret_cast<Datagrams*>(ipv4->info);
+            Datagrams *dg = reinterpret_cast<Datagrams*>(ipv4.info);
             this->datagrams.push_back(*dg);   
         }
         

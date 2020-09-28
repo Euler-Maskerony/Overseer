@@ -27,21 +27,21 @@ TCP::TCP(const char* packet)
 {
     trans_protocol = "TCP";
     struct TCP_catch packet_bytes;
-    const int HEADER_SIZE(160);
+    const int HEADER_SIZE(20);
     memcpy((void *)&packet_bytes, (void *)packet, HEADER_SIZE);
-    src_port = static_cast<unsigned int>(packet_bytes.src_port);
-    dest_port = static_cast<unsigned int>(packet_bytes.dest_port);
-    std::bitset<6> flags_bits(static_cast<std::bitset<6>>((static_cast<std::bitset<16>>(packet_bytes.offs_res_flags) & static_cast<std::bitset<16>>(0b0000000000111111)).to_ulong()));
+    src_port = static_cast<unsigned int>(ntohs(packet_bytes.src_port));
+    dest_port = static_cast<unsigned int>(ntohs(packet_bytes.dest_port));
+    std::bitset<6> flags_bits(static_cast<std::bitset<6>>((static_cast<std::bitset<16>>(ntohs(packet_bytes.offs_res_flags)) & static_cast<std::bitset<16>>(0b0000000000111111)).to_ulong()));
+    std::cout << packet_bytes.offs_res_flags << '\n';
     std::bitset<6> flag_mask(static_cast<std::bitset<6>>(0b100000));
-    bool *flag(&flags.syn);
-    for(int i(0); i<=6; i++)
+    bool *flag(&flags.urg);
+    for(int i(0); i<6; i++)
     {
-        flag += i;
-        *flag = (bool)(flags_bits & (flag_mask >> i)).to_ulong();
+        *(flag+i) = static_cast<bool>((flags_bits & (flag_mask >> i)).to_ulong());
     }
     state = getState();
     description = getDescription();
-};
+}
 
 
 std::string TCP::getState()
@@ -56,12 +56,19 @@ std::string TCP::getState()
 std::string TCP::getDescription()
 {
     description = "URG ACK PSH RST SYN FIN ";
-    bool *flag(&flags.syn);
-    for(int i(0); i <= 20; i+=4)
-        if(not *(flag+i)) description.erase(i, 4);
+    bool *flag(&flags.urg);
+    for(int i(0); i < description.size(); i += 4)
+    {
+        if(not *flag)
+        {
+            description.erase(i, 4);
+            i -= 4;
+        }
+        flag++;
+    }
     description += "| ";
-    description += "Source port: " + src_port;
-    description += " Destination port: " + dest_port;
+    description += "Source port: " + std::to_string(src_port);
+    description += " Destination port: " + std::to_string(dest_port);
 
     return description;
 }
@@ -75,6 +82,8 @@ IPv4::IPv4(const char* packet)
     memcpy((void *)&packet_bytes, (void *)packet, HEADER_SIZE);
     size = static_cast<unsigned int>(ntohs(packet_bytes.size));
     ttl = static_cast<unsigned int>(packet_bytes.ttl);
+    hsize = (static_cast<std::bitset<8>>(packet_bytes.version_hsize) & static_cast<std::bitset<8>>(0b00001111)).to_ulong() * 4;
+    std::cout << hsize << '\n';
     std::string trans_protocol(IP_protocols[static_cast<unsigned int>(packet_bytes.protocol)]);
     char src_addr_bytes[4], dest_addr_bytes[4];
     memcpy((void *)src_addr_bytes, (void *)&packet_bytes.src, 4);
@@ -84,7 +93,7 @@ IPv4::IPv4(const char* packet)
     if(trans_protocol == "TCP")
     {
         connection = true;
-        TCP tcp_packet(packet + HEADER_SIZE);
+        TCP tcp_packet(packet + hsize);
         if(src.find("192.168") != std::string::npos)
         {
             tcp_packet.local = src;
@@ -100,7 +109,7 @@ IPv4::IPv4(const char* packet)
     }
     else if(trans_protocol == "UDP")
     {
-
+        connection = false;
     }
 }
 
