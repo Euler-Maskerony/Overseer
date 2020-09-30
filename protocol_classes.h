@@ -7,66 +7,75 @@ class Connection
 {
 public:
     std::string         net_protocol;
-    std::string         trans_protocol;
     std::string         local;
     std::string         server;
-    std::string         state;
     std::string         description;
+    long long           size;
+    int                 init_time;
     int                 packets_count;
 
-
+    Connection() : packets_count{ 1 }{};
     Connection operator+=(const Connection connection_dg);
+
 private:
     void getDescription();
 
-};
+protected:
+    std::string         state;
+    std::string         trans_protocol;
 
-struct Datagrams
-{
-    std::string         protocol_name;
-    std::string         src;
-    std::string         dest;
-    std::string         description;
+
 };
 
 class IPv4
 {
-public:
+private:
     unsigned int         size;
     unsigned int         ttl;
-    unsigned int         hsize;         
+    unsigned int         hsize;   
+ 
+public:     
     bool                 connection;
-    void*                info;
-    IPv4(const char *packet);
+    bool                 is_src_local;
+    Connection           info;
+    IPv4(const unsigned char *packet);
     std::string Description();
     std::string Dump();
 };
 
 class IPv6
 {
-public:
+private:
     unsigned int         size;
     unsigned int         ttl;
-    void*                info;
-    IPv6(const char *packet);
+
+public:
+    bool                 connection;
+    Connection           info;
+    IPv6(const unsigned char *packet);
     std::string Description();
     std::string Dump();
 };
 
-class ARP: Datagrams
+class ARP
 {
+private:
+    bool                request;
+    std::string         protocol_name;
+    std::string         src;
+    std::string         dest;
+    std::string         sha;
+    std::string         tha;
+
 public:
-    bool                 request;
-    std::string          sha;
-    std::string          tha;
-    ARP(const char *packet);
+    ARP(const unsigned char *packet);
     std::string Description();
     std::string Dump();
 };
 
 class TCP: public Connection
 {
-public:
+private:
     unsigned int         src_port;
     unsigned int         dest_port;
     long                 sn;
@@ -82,8 +91,9 @@ public:
         bool    fin;
     };
     Flags flags;
-    
-    TCP(const char* packet);
+
+public:
+    TCP(const unsigned char* packet);
     std::string getState();
     std::string getDescription();
 };

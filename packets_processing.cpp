@@ -5,9 +5,10 @@
 #include "protocols_numbers.h"
 #include "protocol_classes.h"
 #include "packets_processing.h"
+#include "get_addr.h"
 
 
-Packet::Packet(const char *packet)
+Packet::Packet(const unsigned char *packet)
 {
     struct ethhdr ether_hdr;
     memcpy((void *)&ether_hdr, (void *)packet, ETH_HLEN);
@@ -16,19 +17,32 @@ Packet::Packet(const char *packet)
     {
         ARP packet_info(packet+ETH_HLEN);
         dump = packet_info.Dump();
-        protocol_info = &packet_info;
     }
     else if(protocol_name == "Internet Protocol version 4")
     {
         IPv4 packet_info(packet+ETH_HLEN);
         dump = packet_info.Dump();
-        protocol_info = &packet_info;
+        if(packet_info.connection)
+        {
+            connection = packet_info.info;
+            if(packet_info.is_src_local)
+            {
+                mac_server = MACAddrFromBytes(ether_hdr.h_dest);
+                mac_local = MACAddrFromBytes(ether_hdr.h_source);
+            }
+            else
+            {
+                mac_server = MACAddrFromBytes(ether_hdr.h_source);
+                mac_local = MACAddrFromBytes(ether_hdr.h_dest);
+            }
+        }
     }
-    else if(protocol_name == "Internet Protocol Version 6")
+    else if(protocol_name == "Internet Protocol Version 6" and false)
     {
         IPv6 packet_info(packet+ETH_HLEN);
         dump = packet_info.Dump();
-        protocol_info = &packet_info;
+        if(packet_info.connection)
+            connection = packet_info.info;
     }
     else
         std::cout << "[!] Unknown protocol." << '\n';

@@ -21,7 +21,7 @@ int socket_setup();
 
 void recievingThread(std::vector<Client> *clients, SOCKET sock)
 {
-    char buffer[BUF_SIZE];
+    unsigned char buffer[BUF_SIZE];
 
     while(1)
     {
@@ -41,9 +41,19 @@ void recievingThread(std::vector<Client> *clients, SOCKET sock)
         else
         {
             Packet packet_info(buffer);
-            ClientHandler(packet_info, *clients);
+            if(not packet_info.mac_local.empty())
+                ClientHandler(packet_info, *clients);
+            
         }
     }
+}
+
+void Tree(std::vector<Client> *clients)
+{
+    std::string tree{""};
+    for(Client &client : *clients)
+        tree += client.Branch();
+    std::cout << tree << '\n';
 }
 
 int main()
@@ -63,7 +73,7 @@ int main()
         std::cin >> command;
 
         if(command == "tree")
-            std::cout << "nothing yet)" << '\n';
+            Tree(&clients);
         else if(command == "stop")
             kill_thread = true;
         else if(command == "clear")

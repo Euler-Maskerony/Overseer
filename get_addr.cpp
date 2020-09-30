@@ -6,7 +6,7 @@
 #include <cstring>
 #include "bin_masks.h"
 
-std::string MACAddrFromBytes(const char *addr_bytes)
+std::string MACAddrFromBytes(const unsigned char *addr_bytes)
 {
     std::string address{};
     for(int i{0}; i<=11; i+=1)
@@ -21,7 +21,7 @@ std::string MACAddrFromBytes(const char *addr_bytes)
 }
 
 
-std::string IPv4AddrFromBytes(const char *addr_bytes)
+std::string IPv4AddrFromBytes(const unsigned char *addr_bytes)
 {
     struct in_addr address_s;
     memcpy((void *)&address_s.s_addr, (void *)addr_bytes, 4);
@@ -30,7 +30,7 @@ std::string IPv4AddrFromBytes(const char *addr_bytes)
     return address;
 }
 
-std::string IPv6AddrFromBytes(const char *addr_bytes)
+std::string IPv6AddrFromBytes(const unsigned char *addr_bytes)
 {
     struct in6_addr address_s;
     char address_c[INET6_ADDRSTRLEN];

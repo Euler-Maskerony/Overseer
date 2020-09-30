@@ -12,6 +12,7 @@ Connection Connection::operator+=(const Connection connection_dg)
 {
     this->state = connection_dg.state;
     this->packets_count++;
+    this->size += connection_dg.size;
     
     return *this;
 }
@@ -23,7 +24,7 @@ void Connection::getDescription()
 }
 
 
-TCP::TCP(const char* packet)
+TCP::TCP(const unsigned char* packet)
 {
     trans_protocol = "TCP";
     struct TCP_catch packet_bytes;
@@ -32,7 +33,6 @@ TCP::TCP(const char* packet)
     src_port = static_cast<unsigned int>(ntohs(packet_bytes.src_port));
     dest_port = static_cast<unsigned int>(ntohs(packet_bytes.dest_port));
     std::bitset<6> flags_bits(static_cast<std::bitset<6>>((static_cast<std::bitset<16>>(ntohs(packet_bytes.offs_res_flags)) & static_cast<std::bitset<16>>(0b0000000000111111)).to_ulong()));
-    std::cout << packet_bytes.offs_res_flags << '\n';
     std::bitset<6> flag_mask(static_cast<std::bitset<6>>(0b100000));
     bool *flag(&flags.urg);
     for(int i(0); i<6; i++)
@@ -66,7 +66,7 @@ std::string TCP::getDescription()
         }
         flag++;
     }
-    description += "| ";
+    description += '|' + state + "| ";
     description += "Source port: " + std::to_string(src_port);
     description += " Destination port: " + std::to_string(dest_port);
 
@@ -74,7 +74,7 @@ std::string TCP::getDescription()
 }
 
 
-IPv4::IPv4(const char* packet)
+IPv4::IPv4(const unsigned char* packet)
 {
     std::string net_protocol("Internet Protocol version 4");
     const int HEADER_SIZE(20);
@@ -83,9 +83,8 @@ IPv4::IPv4(const char* packet)
     size = static_cast<unsigned int>(ntohs(packet_bytes.size));
     ttl = static_cast<unsigned int>(packet_bytes.ttl);
     hsize = (static_cast<std::bitset<8>>(packet_bytes.version_hsize) & static_cast<std::bitset<8>>(0b00001111)).to_ulong() * 4;
-    std::cout << hsize << '\n';
     std::string trans_protocol(IP_protocols[static_cast<unsigned int>(packet_bytes.protocol)]);
-    char src_addr_bytes[4], dest_addr_bytes[4];
+    unsigned char src_addr_bytes[4], dest_addr_bytes[4];
     memcpy((void *)src_addr_bytes, (void *)&packet_bytes.src, 4);
     memcpy((void *)dest_addr_bytes, (void *)&packet_bytes.dest, 4);
     std::string src(IPv4AddrFromBytes(src_addr_bytes));
@@ -98,14 +97,17 @@ IPv4::IPv4(const char* packet)
         {
             tcp_packet.local = src;
             tcp_packet.server = dest;
+            is_src_local = true;
         }
         else
         {
             tcp_packet.local = dest;
             tcp_packet.server = src;
+            is_src_local = false;
         }
         tcp_packet.net_protocol = net_protocol;
-        info = &tcp_packet;
+        tcp_packet.size = size;
+        info = static_cast<Connection>(tcp_packet);
     }
     else if(trans_protocol == "UDP")
     {
@@ -123,11 +125,11 @@ std::string IPv4::Dump()
     return "dump";
 }
 
-IPv6::IPv6(const char *packet)
+IPv6::IPv6(const unsigned char *packet)
 {
     std::string net_protocol("Internet Protocol version 6");
     const int HEADER_SIZE(40);
-    char src_addr_bytes[16], dest_addr_bytes[16];
+    unsigned char src_addr_bytes[16], dest_addr_bytes[16];
     struct IPv6_catch packet_bytes;
     memcpy((void *)&packet_bytes, (void *)packet, HEADER_SIZE);
     size = static_cast<long>(ntohs(packet_bytes.payload_length)) + 40;
@@ -151,7 +153,7 @@ std::string IPv6::Dump()
     return "dump";
 }
 
-ARP::ARP(const char *packet)
+ARP::ARP(const unsigned char *packet)
 {
     protocol_name = "Address Resolution Protocol";
     struct ARP_catch packet_bytes;
@@ -170,13 +172,11 @@ ARP::ARP(const char *packet)
         {
             src = IPv4AddrFromBytes(packet+HEADER_SIZE+hlen);
             dest = IPv4AddrFromBytes(packet+HEADER_SIZE+2*hlen+plen);
-            description = Description();
         }
         else if(Eth_protocols[ptype] == "Internet Protocol version 6")
         {
             src = IPv6AddrFromBytes(packet+HEADER_SIZE+hlen);
             dest = IPv6AddrFromBytes(packet+HEADER_SIZE+2*hlen+plen);
-            description = Description();
         }
         else
         {

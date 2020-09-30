@@ -11,10 +11,9 @@ class Client
 public:
     std::string                  mac_addr;
     std::vector<Connection>      connections;
-    std::vector<Datagrams>       datagrams;
 
-    Client(const Packet packet_info) : mac_addr{packet_info.mac_src}{};
-    std::string Tree();
+    Client(const Packet packet_info) : mac_addr{packet_info.mac_local}{};
+    std::string Branch();
     Client operator+=(const Packet packet);
 private:
     int checkConnection(Connection connection);
