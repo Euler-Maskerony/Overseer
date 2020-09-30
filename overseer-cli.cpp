@@ -26,7 +26,7 @@ void recievingThread(std::vector<Client> *clients, SOCKET sock)
     while(1)
     {
         if(kill_thread)
-            std::terminate();
+            break;
         
         if(pause_thread)
             while(pause_thread)
@@ -75,15 +75,16 @@ int main()
         if(command == "tree")
             Tree(&clients);
         else if(command == "stop")
+        {
             kill_thread = true;
+            recieving_packets.join();
+        }
         else if(command == "clear")
             clients.erase(clients.begin());
         else if(command == "pause")
             pause_thread = true;
         else if(command == "resume")
             pause_thread = false;
-        else if(command == "")
-            continue;
         else
             std::cout << "[*] Command not found: " << command;
         
