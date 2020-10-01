@@ -114,6 +114,19 @@ int main()
                 std::cout << "[*] Already running" << '\n';
             pause_thread = false;
         }
+        else if(command == "help")
+        {
+            std::cout << "Welcome to Overseer!\n" << "Tool for controlling connections over local network.\n\n";
+            std::cout << "Available commands:\n";
+            std::cout << "tree      Shows connections tree.\n";
+            std::cout << "stop      Safe termination of recieving thread.\n";
+            std::cout << "clear     Clears connections tree.\n";
+            std::cout << "pause     Pauses recieving thread.\n";
+            std::cout << "resume    Unpauses recieving thread.\n";
+            std::cout << "help      Prints this help page\n";
+        }
+        else if(command == "help!")
+            std::cout << "Don't panic!" << '\n';
         else
             std::cout << "[!] Command not found: " << command;
         
