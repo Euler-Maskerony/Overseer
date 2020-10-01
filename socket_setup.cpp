@@ -10,6 +10,8 @@
 #include <linux/if_packet.h>
 #include <unistd.h>
 
+typedef int SOCKET;
+
 int getIFIndex(char *if_name)
 {
     struct ifreq ifr;
@@ -20,7 +22,7 @@ int getIFIndex(char *if_name)
     if(ioctl(sock, SIOCGIFINDEX, (void *)&ifr) < 0)
     {
         std::cout << "[!] Could not get interface index: " << errno << "\n";
-        std::cout << "[*] Packets will be recieving from all available interfaces." << '\n';
+        std::cout << "[!] Packets will be recieving from all available interfaces." << '\n';
         close(sock);
         return 0;
     }
@@ -28,21 +30,37 @@ int getIFIndex(char *if_name)
     return ifr.ifr_ifindex;
 }
 
-int socket_setup()
+void togglePromisc(char *if_name, SOCKET sock, bool on)
 {
-    int sock;
+    if(on)
+    {
+        struct ifreq interface;
+        strcpy(interface.ifr_name, if_name);
+        ioctl(sock, SIOCGIFFLAGS, &interface);
+        interface.ifr_flags |= IFF_PROMISC;
+        ioctl(sock, SIOCSIFFLAGS, &interface);
+    }
+    else
+    {
+        struct ifreq interface;
+        strcpy(interface.ifr_name, if_name);
+        ioctl(sock, SIOCGIFFLAGS, &interface);
+        interface.ifr_flags &= ~(IFF_PROMISC);
+        ioctl(sock, SIOCSIFFLAGS, &interface);
+    }
+}
+
+int socket_setup(char *DEVICE)
+{
+    SOCKET sock;
     int err;
     std::string device{};
     struct sockaddr_in server;
-    std::cout << "Enter name of interface listen on: ";
-    std::cin >> device;
-    char DEVICE[sizeof(device)];
-    strcpy(DEVICE, device.c_str());
     int if_index = getIFIndex(DEVICE);
 
     if((sock = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0)
     {
-        std::cout << "[!] Could not create socket: " << errno << '\n';
+        std::cout << "[!!] Could not create socket: " << errno << '\n';
         close(sock);
         return -1;
     }
@@ -54,21 +72,16 @@ int socket_setup()
 
     if((err = bind(sock, (const sockaddr *) &s_ll, sizeof(s_ll))) < 0)
     {
-        std::cout << "[!] Error while binding to interface: " << errno << '\n';
+        std::cout << "[!!] Error while binding to interface: " << errno << '\n';
         close(sock);
         return -1;
     }
     else if(if_index != 0 && err >= 0)
         std::cout << "[*] <" << DEVICE << ">: Promiscous mode enabled." << '\n';
     else
-        std::cout << "[*] Promiscous mode enabled." << '\n';
+        std::cout << "[!] Promiscous mode cannot be enabled." << '\n';
 
-    bool ipincl(true);
-    struct ifreq interface;
-    strcpy(interface.ifr_name, DEVICE);
-    ioctl(sock, SIOCGIFFLAGS, &interface);
-    interface.ifr_flags |= IFF_PROMISC;
-    ioctl(sock, SIOCSIFFLAGS, &interface);
+    togglePromisc(DEVICE, sock, true);
 
     return sock;
 }

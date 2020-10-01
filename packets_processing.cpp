@@ -45,5 +45,5 @@ Packet::Packet(const unsigned char *packet)
             connection = packet_info.info;
     }
     else
-        std::cout << "[!] Unknown protocol." << '\n';
+        dump = "Unknown protocol: " + protocol_name + '\n';
 }

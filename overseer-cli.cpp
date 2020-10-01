@@ -5,6 +5,7 @@
 #include <cstring>
 #include <vector>
 #include <thread>
+#include <signal.h>
 #include "packets_processing.h"
 #include "protocol_classes.h"
 #include "client.h"
@@ -16,7 +17,8 @@ typedef int SOCKET;
 bool kill_thread(false);
 bool pause_thread(false);
 
-int socket_setup();
+void togglePromisc(char *if_name, SOCKET sock, bool on);
+int socket_setup(char *DEVICE);
 
 
 void recievingThread(std::vector<Client> *clients, SOCKET sock)
@@ -56,16 +58,28 @@ void Tree(std::vector<Client> *clients)
     std::cout << tree << '\n';
 }
 
+void signal_callback_handler(int signum)
+{
+    std::cout << '\n' << "Terminating..." << '\n';
+    exit(signum);
+}
+
 int main()
 {
     std::vector<Client> clients;
     std::string command;
+    std::string device;
+    signal(SIGINT, signal_callback_handler);
 
-    std::cout << "Overseer 0.1" << '\n';
-    std::cout << "Type \"help\" for more information." << '\n';
-    SOCKET sock{socket_setup()};
+    std::cout << "Overseer" << '\n';
+    std::cout << "Type \"help\" for more information." << '\n' << '\n';
+    std::cout << "[?] Enter name of interface listen on: ";
+    std::cin >> device;
+    char DEVICE[sizeof(device)];
+    strcpy(DEVICE, device.c_str());
+    SOCKET sock{socket_setup(DEVICE)};
     std::thread recieving_packets(recievingThread, &clients, sock);
-    std::cout << "Recieving packets thread has been started" << '\n';
+    std::cout << "[*] Recieving packets thread has been started" << '\n' << '\n';
 
     while(1)
     {
@@ -78,15 +92,30 @@ int main()
         {
             kill_thread = true;
             recieving_packets.join();
+            togglePromisc(DEVICE, sock, false);
+            close(sock);
+            std::cout << "[*] <" << DEVICE << ">: Promiscous mode disabled." << '\n';
         }
         else if(command == "clear")
             clients.erase(clients.begin());
         else if(command == "pause")
+        {
+            if(not pause_thread)
+                std::cout << "[*] Recieving paused. To unpause type \"resume\"" << '\n';
+            else
+                std::cout << "[*] Already paused" << '\n';
             pause_thread = true;
+        }
         else if(command == "resume")
+        {
+            if(pause_thread)
+                std::cout << "[*] Recieving thread is running now" << '\n';
+            else
+                std::cout << "[*] Already running" << '\n';
             pause_thread = false;
+        }
         else
-            std::cout << "[*] Command not found: " << command;
+            std::cout << "[!] Command not found: " << command;
         
         std::cout << '\n';
     }
